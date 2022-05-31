@@ -71,14 +71,8 @@ def stop_on_line2(gpio, level, tick):
     turning2 = False
         
 def rising_front(gpio, level, tick):
-    global front_object
     global ultrastarttime
-    global stopdistance
-    dist = 343/2 * (time.time() - ultrastarttime)
-    if dist < stopdistance:
-        print("rising distance: ", dist)
-        print("entered rising_front if statment")
-        front_object = True
+    ultrastarttime = tick
         
     # while front_object:
 #         ultrastarttime = time.time()
@@ -88,11 +82,12 @@ def falling_front(gpio, level, tick):
     global ultrastarttime
     global front_object
     global stopdistance
-    dist = 343/2 * (time.time() - ultrastarttime)
+    
+    dist = 343/2 * (tick - ultrastarttime) * (10**-6)
     if dist > stopdistance:
-        print("falling distance: ", dist)
-        print("entered falling_front if statment")
         front_object = False
+    if dist < stopdistance:
+        front_object = True
     
 def shift(long, lat, heading):
     if heading % 4 == NORTH:
@@ -377,28 +372,36 @@ class Motor:
         lasttime = time.time()
 
         try:
-            
+#             while front_object:
+#                 if time.time() - lasttime > 0.1:
+#                     self.io.write(ULTRA2_TRIGGER, 1)
+#                     time.sleep(0.00001)
+#                     self.io.write(ULTRA2_TRIGGER, 0)
 #             while not exitcond:
 #                 while time.time()-lasttime > 0.1:
 #                     while not front_object:
                         # if statement of how much time has passed (100 ms)
                             # update lasttime
                         
-                        # trigger 
+                        # trigger
+                        
             
-            while not exitcond and not front_object:
+            global ultrastarttime
+            while not exitcond:
                 if time.time() - lasttime > 0.1:
-                    # self.io.gpio_trigger(ULTRA1_TRIGGER, 10, 1)
-                    self.io.gpio_trigger(ULTRA2_TRIGGER, 10, 1)
-                    # self.io,gpio_trigger(ULTRA3_TRIGGER, 10, 1)
+                    self.io.write(ULTRA2_TRIGGER, 1)
+                    time.sleep(0.00001)
+                    self.io.write(ULTRA2_TRIGGER, 0)
                     lasttime = time.time()
-                    ultrastarttime = time.time()
+                    
                 # Reading IR Sensors
                 ir_left_state = self.io.read(IR_LEFT)
                 ir_center_state = self.io.read(IR_CENTER)
                 ir_right_state = self.io.read(IR_RIGHT)              
                 # Setting motor states
-                if (ir_left_state == 0 and ir_center_state == 1 and ir_right_state == 0): # centered
+                if front_object:
+                    self.setvel(0,0)
+                elif (ir_left_state == 0 and ir_center_state == 1 and ir_right_state == 0): # centered
                     self.setvel(vel_nom, 0)
                     lost_counter = 0
                     state = 'C'
@@ -428,6 +431,9 @@ class Motor:
                     exitcond = True
                 else: # special case 101 where you can do anything
                     print("Currently in a turning state. Continuing what I was doing.")
+#             if front_object:
+#                 print("we have entered an if statement")
+#                 self.linefollow()
 
         except:
             self.setvel(0,0)
@@ -524,15 +530,26 @@ if __name__ == "__main__":
         global lat
         global lastintersection
         global intersections
+        lasttime = time.time()
+        global ultrastarttime
         
         motor.linefollow()
-        while front_object:
-            motor.setvel(0,0)
-            time.sleep(5)
-            motor.linefollow()
+#         while front_object:
+#             motor.setvel(0,0)
+# #             if time.time() - lasttime > 0.1:
+# #                 motor.io.write(ULTRA2_TRIGGER, 1)
+# #                 time.sleep(0.00001)
+# #                 motor.io.write(ULTRA2_TRIGGER, 0)
+# #                 ultrastarttime = time.time()
+# #                 print(front_object)
+#             motor.linefollow()
+            
+#         while front_object:
+#             motor.setvel(0,0)
+#             time.sleep(5)
+#             motor.linefollow()
         (long, lat) = shift(long, lat, heading)
         if intersection(long, lat) == None:
-            print("checking intersection")
             inter = Intersection(long, lat)
             intersections.append(inter) # append
             paths = motor.spincheck()
@@ -649,9 +666,7 @@ if __name__ == "__main__":
                 for s in i.streets:
                     if s == UNEXPLORED or s == UNKNOWN:
                         allConnected = False
-            trackmap()
-            print(intersections)
-        
+            trackmap()        
 #         prompt user to enter spiral
 #         goal_long = input("longitude: ")
 #         goal_lat = input("latitude: ")
@@ -664,4 +679,3 @@ if __name__ == "__main__":
         motor.shutdown()
     except KeyboardInterrupt:
         motor.setvel(0,0)
-    
