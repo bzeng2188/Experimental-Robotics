@@ -119,7 +119,7 @@ class Motor:
     Attributes
     ----------
     io : pigpio.io
-        use a passed in pigpio.io object to setup IR pins
+        use a passed in pigpio.io object to setup motor pins
 
     Methods
     -------
@@ -222,7 +222,7 @@ class Motor:
     def setspin(self, speed):
         """
         Input:
-            speed, an float representing the speed in degrees per second
+            speed, float representing the speed in degrees per second
         Output:
             none
         
@@ -331,7 +331,7 @@ class Ultrasonic:
     Attributes
     ----------
     io : pigpio.io
-        use a passed in pigpio.io object to setup IR pins
+        use a passed in pigpio.io object to setup ultrasonic pins
     triggerpin : int
         an int representing the pin of the pigpio.io pin corresponding to
         the trigger
@@ -342,7 +342,7 @@ class Ultrasonic:
         a float representing the time that the ultrasonic trigger was
         activated
     object_present : boolean
-        a boolean representing whether an object is present or not in front
+        a boolean representing whether an object is or is not in front
     stop_distance : float
         a float representing a distance threshold in meters that would cause
         a reaction from the ultrasonic sensor input
@@ -362,8 +362,8 @@ class Ultrasonic:
         Set start_time in order to calculate distance to the closest object.
     falling(gpio, level, tick):
         Use time measured for ultrasonic pulse to and from the object in
-        order to measure distance. Change the boolean object_present to
-        reflect distance to object.
+        order to measure distance. Change the boolean object_present based
+        on distance to object.
     trigger():
         Trigger the ultrasonic sensor to pulse.
     stopcontinual():
@@ -427,9 +427,9 @@ class Ultrasonic:
         Output:
             none
         
-        Use time measured for ultrasonic pulse to and from the object in order
-        to measure distance. Change the boolean object_present to reflect
-        distance to object.
+        Use time measured for ultrasonic pulse to and from the object in
+        order to measure distance. Change the boolean object_present based
+        on distance to object.
         """
         self.distance = 343/2 * (tick - self.start_time) * (10**-6)
         if self.distance > self.stop_distance:
@@ -514,9 +514,12 @@ class Robot:
         Turn 90 degrees based on two conditions, stopping either based on time
         or based on detecting a line.
     spintonextline(dir):
-        Spin to the next line a designated number of times, denoted by the int dir.
+        Spin to the next line a designated number of times, denoted by the int dir. Turn in the direction
+        with the shortest turn path.
     spincheck():
         Determines the paths available at an intersection when the robot arrives at a new intersection.
+    stupidlinefollow():
+        Engages in a simplified line follow program to allow spiral to work, from initial lost condition.
     ultraturn(left_us, center_us, right_us):
         Turns based on the ultrasonic sensor readings.
     linefollow(center_us):
@@ -538,7 +541,7 @@ class Robot:
         until all intersections are discovered and the map is completely
         understood.
     djikstra(start, goal):
-        Run the Djikstra algorithm to calculate the shortest route from the start position to the end position.
+        Run the Djikstra algorithm to calculate the shortest route from the start position to the target position.
     shift(long, lat, heading):
         Shift the position of the robot in accordance with its current heading and direction driven.
     intersection(long, lat):
@@ -546,6 +549,14 @@ class Robot:
         return that intersection object. If it is not found, return None.
     """
     def __init__(self):
+        """
+        Constructs all the necessary attributes for the Robot object.
+
+        Parameters
+        ----------
+            io : pigpio.io
+                    pigpio.io object that contains pins, interface with Pi           
+        """
         # Initialize the connection to the pigpio daemon (GPIO interface).
         self.io = pigpio.pi()
         if not self.io.connected:
@@ -635,7 +646,8 @@ class Robot:
         Output:
             none
         
-        Spin to the next line a designated number of times, denoted by the int dir.
+        Spin to the next line a designated number of times, denoted by the int dir. Turn in the direction
+        with the shortest turn path.
         """
         global rightturntime
         global turning
@@ -1012,7 +1024,7 @@ class Robot:
         start, an intersection object that is the starting position of the robot
         goal, an interseciton object that is the ending position of the robot
 
-        Run the Djikstra algorithm to calculate the shortest route from the start position to the end position.
+        Run the Djikstra algorithm to calculate the shortest route from the start position to the target position.
         """
         global intersections
         to_be_processed = []
