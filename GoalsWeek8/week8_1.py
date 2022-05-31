@@ -1,6 +1,5 @@
 
 # Imports
-# Hello there
 import pigpio
 import sys
 import time
